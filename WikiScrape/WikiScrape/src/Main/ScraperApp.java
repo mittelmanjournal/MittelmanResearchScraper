@@ -168,7 +168,10 @@ public class ScraperApp {
 
 		
 	}
-	
+	/**
+	 * Update our instance variables
+  	 * call scrape func
+	 */
 	private void startScraping() {
 		// Implement scraping logic here based on the input values
 		links = linkInput.getText();
@@ -194,6 +197,9 @@ public class ScraperApp {
 
 	}
 
+	/**
+	 * Create a file for each link with each one containing sentences or paragraphs that contain any of the keywords and/or dates seen in that wiki page
+	 */
 	public static void scrapeAndWriteEachLinkToFile(ArrayList<String> linksToScrape, String outputPath,
 			ArrayList<String> keywords, String extractionTypeSelected, boolean getDates,
 			boolean includeCompiledSortedTimeline, ArrayList<String> stringsToBeSortedByDate,
@@ -282,6 +288,9 @@ public class ScraperApp {
 		}
 	}
 	
+	/**
+	 * Locate a file at filepath and line by line add each string to an array list and return that array list
+	 */
 	public static ArrayList<String> getLinksFromFile(String filePath) {
 		ArrayList<String> links = new ArrayList<String>();
 		String linksFilePath = filePath;
@@ -308,6 +317,9 @@ public class ScraperApp {
 		return links;
 	}
 
+	/**
+	 * Get each keyword string as an item in an array list by splitting a text file's string by commas
+	 */
 	public static ArrayList<String> getKeywordsFromFile(String keywordsFilePath) {
 		if (!keywordsFilePath.equals("") && keywordsFilePath != null) {
 			File file = new File(keywordsFilePath);
@@ -345,7 +357,7 @@ public class ScraperApp {
 	public static ArrayList<String> getSentences(String paragraph) {
 		ArrayList<String> sentences = new ArrayList<String>();
 
-		// Split the paragraph into sentences using a simple regex
+		// Split paragraph into sentences using regex
 		String[] sentenceArray = paragraph.split("[.!?]");
 
 		// Check each sentence for the presence of the keyword
