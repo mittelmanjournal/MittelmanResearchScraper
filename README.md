@@ -1,2 +1,12 @@
 # MittelmanResearchScraper
-Scrape many Wikipedia pages at the same time for sentences or paragraphs containing specified keywords, or dates.
+
+## Description
+
+The goal of this app is to expedite the research process, especially building of timelines for series of events with the date scraping feature. Users should be able to collect Wikipedia links that have relevance to what they are researching and when they have all of their links, instead of spending hours reading each page they can use this tool to look for specific keywords in all of the documents at once. Also this tool looks at every time a date is uttered in a sentence or paragraph and based on the first date it sees in each string, it will order each string.
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Features](#features)
+
+## Installation
