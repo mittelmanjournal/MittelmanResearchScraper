@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -37,6 +38,9 @@ public class ScraperApp {
 	private JCheckBox getDatesToggle;
 	
 	private JCheckBox includeCompiledSortedTimelineToggle;
+	
+	private JCheckBox strictTimelineToggle;
+	boolean strictTimeline;
 	
 	private JButton startButton;
 	private JScrollPane scrollPane;
@@ -57,7 +61,7 @@ public class ScraperApp {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					ScraperApp window = new ScraperApp();
+					ScraperAppTesting window = new ScraperAppTesting();
 					window.frame.pack();
 					window.frame.setLocationRelativeTo(null);
 					window.frame.setVisible(true);
@@ -71,7 +75,7 @@ public class ScraperApp {
 	/**
 	 * Create the application.
 	 */
-	public ScraperApp() {
+	public ScraperAppTesting() {
 		initialize();
 	}
 
@@ -91,7 +95,7 @@ public class ScraperApp {
 		frame.setLayout(new BorderLayout());
 		ImageIcon icon = new ImageIcon("logo.png");
 		frame.setIconImage(icon.getImage());
-		frame.setPreferredSize(new Dimension(600, 300));
+		frame.setPreferredSize(new Dimension(800, 300));
 		
 		formPanel = new JPanel(new GridBagLayout());
 		formPanel.setBackground(Color.WHITE); // Set background color for the form panel
@@ -117,7 +121,7 @@ public class ScraperApp {
 		// Text Inputs
 		gbc.gridx = 1;
 		gbc.gridy = 0;
-		gbc.gridwidth = 2;
+		gbc.gridwidth = 3;
 		linkInput = new JTextField(20);
 		linkInput.setPreferredSize(new Dimension(300, 25));
 		formPanel.add(linkInput, gbc);
@@ -138,6 +142,8 @@ public class ScraperApp {
 		outputPathInput.setPreferredSize(new Dimension(300, 25));
 		formPanel.add(outputPathInput, gbc);
 
+		//add date range input here
+		
 		// Toggle for Dates
 		gbc.gridx = 0;
 		gbc.gridy++;
@@ -147,8 +153,13 @@ public class ScraperApp {
 
 		
 		gbc.gridx = 1;
-		includeCompiledSortedTimelineToggle = new JCheckBox("Include Sorted Timeline File");
+		includeCompiledSortedTimelineToggle = new JCheckBox("Sorted Timeline");
 		formPanel.add(includeCompiledSortedTimelineToggle, gbc);
+		
+		//restrict timeline toggle here
+		gbc.gridx = 3;
+		strictTimelineToggle = new JCheckBox("Restrict Timeline");
+		formPanel.add(strictTimelineToggle, gbc);
 		
 		// Button
 		gbc.gridy++;
@@ -190,10 +201,12 @@ public class ScraperApp {
 				e.printStackTrace();
 			}
 		}
+		
+		strictTimeline = strictTimelineToggle.isSelected();
 
 		scrapeAndWriteEachLinkToFile(getLinksFromFile(links), outputPath, getKeywordsFromFile(keywords),
 				extractionTypeSelected, getDates, includeCompiledSortedTimeline, stringsToBeSortedByDate,
-				compiledSortedTimelineWriter);
+				compiledSortedTimelineWriter, strictTimeline);
 
 	}
 
@@ -203,7 +216,7 @@ public class ScraperApp {
 	public static void scrapeAndWriteEachLinkToFile(ArrayList<String> linksToScrape, String outputPath,
 			ArrayList<String> keywords, String extractionTypeSelected, boolean getDates,
 			boolean includeCompiledSortedTimeline, ArrayList<String> stringsToBeSortedByDate,
-			FileWriter compiledSortedTimelineWriter) {
+			FileWriter compiledSortedTimelineWriter, boolean strictTimeline) {
 		// for every link, create a document that has each sentence (or other type) that
 		// contains any of the keywords in the document
 		for (int i = 0; i < linksToScrape.size(); i++) {
@@ -278,9 +291,17 @@ public class ScraperApp {
 		//need to check getDates truthness too because if not true, and includeCST is true, we could be adding to a null arraylist and writing to a null filewriter.
 		if (includeCompiledSortedTimeline && getDates) {
 			try {
-				for (String s : sortYearsAndMonths(stringsToBeSortedByDate)) {
-					compiledSortedTimelineWriter.write(s + "\n\n");
+				//here if strict timeline selected then
+				if(strictTimeline) {
+					for (String s : extraStrictSort(sortByYear(stringsToBeSortedByDate))) {
+						compiledSortedTimelineWriter.write(s + "\n\n");
+					}
+				} else {
+					for (String s : sortYearsAndMonths(stringsToBeSortedByDate)) {
+						compiledSortedTimelineWriter.write(s + "\n\n");
+					}
 				}
+
 				compiledSortedTimelineWriter.close();
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -416,7 +437,7 @@ public class ScraperApp {
 
 	public static ArrayList<String> sortYearsAndMonths(ArrayList<String> stringsToBeSortedByDate) {
 		// Create a custom comparator for sorting
-        Comparator<String> yearComparator = Comparator.comparingInt(ScraperApp::extractYear)
+        Comparator<String> yearComparator = Comparator.comparingInt(ScraperAppTesting::extractYear)
                 .thenComparing(Comparator.naturalOrder());
 
         // Sort the list using the custom comparator
@@ -436,5 +457,109 @@ public class ScraperApp {
         // Return a large value for strings without a year
         return Integer.MAX_VALUE;
     }
+
+	public static boolean anyStringEqualsIgnoreCase(String str, String[] strs) {
+		for(String s : strs) {
+			if(str.equalsIgnoreCase(s)) {
+				return true;
+			}
+		}
+		return false;
+	}
 	
+    public static ArrayList<String> sortByYear(List<String> inputList) {
+        ArrayList<String> withYear = new ArrayList<>();
+        //List<String> withoutYear = new ArrayList<>();
+
+        // Separate strings with years from those without years
+        for (String str : inputList) {
+            if (containsYear(str)) {
+                withYear.add(str);
+            }/* else {
+                withoutYear.add(str);
+            }*/
+        }
+
+        // Sort strings with years
+        withYear.sort((str1, str2) -> extractYear(str1) - extractYear(str2));
+//        onlyYears.addAll(withYear);
+//        // Combine the sorted lists
+//        ArrayList<String> sortedList = new ArrayList<>(withYear);
+//        sortedList.addAll(withoutYear);
+
+        return withYear;
+    }
+
+    private static boolean containsYear(String input) {
+        Pattern yearPattern = Pattern.compile("\\b(\\d{4})\\b");
+        Matcher matcher = yearPattern.matcher(input);
+        return matcher.find();
+    }
+	
+    public static ArrayList<String> extraStrictSort(ArrayList<String> sentences) {
+		ArrayList<String> strictList = new ArrayList<String>();
+		ArrayList<String> bceList = new ArrayList<String>();
+		
+		//iterate each sentence/paragraph in the collected date strings list
+	  	for(int i = 0; i < sentences.size(); i++) {
+	  		boolean proceedToNextSentence = false;
+	  		
+	  		//split sentence/para into word array ( "xyz," type words may exist )
+    		String[] words = sentences.get(i).trim().split(" ");
+    		
+    		//iterate until finding idx position of first year in string (should work on "YYYY," type strings)
+    		int j = 0;
+    		while(j < words.length) {    			
+    			if(containsYear(words[j])) {
+    				break;
+    			}
+    			j++;
+    		}
+    		//if j == word.length, year for some reason not present (should always be present as 
+    		//sortByYear is called before this method
+			int idxOfYear = j; // save year array index
+			int curWord = idxOfYear + 1;
+
+			// "BCE", "BC", "B.C", "B.C.", "AD", "A.D", "A.D." within 2 (arbitrary) words to
+			// the right of the year's index/position in the string
+			int wordsToRight = 1;
+			while (curWord < words.length && wordsToRight <= 2) {	
+				if (anyStringEqualsIgnoreCase(words[curWord], new String[] { "BCE", "BC", "B.C.", "B.C", "BC.", "BC,", "BC)" }) && wordsToRight <= 2) {
+					bceList.add(sentences.get(i));
+					proceedToNextSentence = true;
+					break;
+				} else if (anyStringEqualsIgnoreCase(words[curWord], new String[] { "AD", "A.D", "A.D.", "AD.", "AD,", "AD)" })	&& wordsToRight <= 2) {	
+					strictList.add(sentences.get(i));
+					proceedToNextSentence = true;
+					break;
+				}
+				wordsToRight++;
+				curWord++;
+			}
+			if(proceedToNextSentence) continue;
+			
+			// in this while loop we are checking if to the left of the year "on" or "in" appear
+			int wordsToLeft = 1;
+			curWord = idxOfYear - 1;
+    		while(curWord >= 0 && wordsToLeft <= 4) {
+    			if((words[curWord].equalsIgnoreCase("in") || words[curWord].equalsIgnoreCase("since"))&& wordsToLeft <= 2) {
+    				//this means case is: "In 2022" or "In January 2022", and is a valid case
+    				strictList.add(sentences.get(i));
+    				break;
+    			}
+    			
+    			if(words[curWord].equalsIgnoreCase("on") && wordsToLeft <= 4) {
+    				//this means case is: "On Monday, January 1, 2022", or "On January 1, 2022" and is a valid case
+    				strictList.add(sentences.get(i));
+    				break;
+    			}
+    			wordsToLeft++;
+    			curWord--; //adjust word left 1 
+    		}
+    	}
+	  	
+	  	Collections.reverse(bceList);
+	  	strictList.addAll(0, bceList);
+	  	return strictList;
+    }
 }
