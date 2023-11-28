@@ -314,8 +314,13 @@ public class ScraperApp {
 //						compiledSortedTimelineWriter.write(s + "\n\n");
 //					}
 				}
+				
 				// handle range stuff on arr
-				for (String s : limitTimelineRange(arr, yearRange)) {
+				if (!yearRange.trim().equals("") && yearRange != null && containsYear(yearRange)) {
+					arr = limitTimelineRange(arr, yearRange);
+				} 
+				
+				for (String s : arr) {
 					compiledSortedTimelineWriter.write(s + "\n\n");
 				}
 				compiledSortedTimelineWriter.close();
@@ -326,10 +331,19 @@ public class ScraperApp {
 	}
 	
 	public static ArrayList<String> limitTimelineRange(ArrayList<String> strict, String range){
+		System.out.println("Range: " + range + " r");
     	ArrayList<String> ret = new ArrayList<String>();
-    	String[] bounds = range.split("-");
-    	int lower = ifBCNegate(bounds[0].trim()); 
-    	int upper = ifBCNegate(bounds[1].trim());
+    	
+    	//if range not included, only 1 year input then assume it is lower and assume upper is modern day
+    	int lower = ifBCNegate(range.trim());
+    	int upper = Integer.MAX_VALUE; //whatever modern day is either make this the modern year or integer.max
+    	
+    	if(range.contains("-")) { //only if range included then find rnage
+    		String[] bounds = range.split("-");
+        	lower = ifBCNegate(bounds[0].trim()); 
+        	upper = ifBCNegate(bounds[1].trim());
+    	}
+    	 
     	for(String s : strict) {
     		if(ifBCNegate(s) >= lower && ifBCNegate(s) <= upper) {
     			ret.add(s);
@@ -366,26 +380,28 @@ public class ScraperApp {
 	 */
 	public static ArrayList<String> getLinksFromFile(String filePath) {
 		ArrayList<String> links = new ArrayList<String>();
-		String linksFilePath = filePath;
+		
+		Path path = Paths.get(filePath);
 
-		Path path = Paths.get(linksFilePath);
+		if (Files.exists(path)) {
+			System.out.println("File exists at path: " + path.toAbsolutePath());
 
-		try (BufferedReader reader = Files.newBufferedReader(path)) {
-			if (Files.exists(path)) {
-				System.out.println("File exists at path: " + path.toAbsolutePath());
-
-				String line;
+			String line;
+			try (BufferedReader reader = Files.newBufferedReader(path)) {
 				while ((line = reader.readLine()) != null) {
 					line = line.trim();
 					line = line.replace("https://en.wikipedia.org/wiki/", "");
 					links.add(line);
 				}
-
-			} else {
-				System.out.println("File does not exist at this path.");
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
+
+		} else {
+			System.out.println("File does not exist at this path. Assume comma separated list inputted");
+			for (String s : filePath.split(",")) {
+				links.add(s.trim());
+			}
 		}
 		return links;
 	}
@@ -394,10 +410,15 @@ public class ScraperApp {
 	 * Get each keyword string as an item in an array list by splitting a text file's string by commas
 	 */
 	public static ArrayList<String> getKeywordsFromFile(String keywordsFilePath) {
-		if (!keywordsFilePath.equals("") && keywordsFilePath != null) {
-			File file = new File(keywordsFilePath);
+		
+		ArrayList<String> keywords = new ArrayList<String>();
 
-			try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+		Path path = Paths.get(keywordsFilePath);
+
+		if (Files.exists(path)) {
+			System.out.println("File exists at path: " + path.toAbsolutePath());
+			
+			try (BufferedReader reader = Files.newBufferedReader(path)) {
 				StringBuilder content = new StringBuilder();
 				String line;
 
@@ -405,26 +426,29 @@ public class ScraperApp {
 				while ((line = reader.readLine()) != null) {
 					content.append(line);
 				}
-
+				
 				// Split the string by commas and store in an ArrayList
-				ArrayList<String> dataList = new ArrayList<String>(Arrays.asList(content.toString().split(",")));
-				for (int i = 0; i < dataList.size(); i++) {
-					dataList.set(i, dataList.get(i).trim());
+				keywords = new ArrayList<String>(Arrays.asList(content.toString().split(",")));
+				for (int i = 0; i < keywords.size(); i++) {
+					keywords.set(i, keywords.get(i).trim());
 				}
-				for (int i = 0; i < dataList.size(); i++) {
-					if (dataList.get(i).equals("")) {
-						dataList.remove(i);
+				for (int i = 0; i < keywords.size(); i++) {
+					if (keywords.get(i).equals("")) {
+						keywords.remove(i);
 						i--;
 					}
 				}
-
-				return dataList;
-
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
+
+		} else {
+			System.out.println("File does not exist at this path. Assume comma separated list inputted");
+			for (String s : keywordsFilePath.split(",")) {
+				keywords.add(s.trim());
+			}
 		}
-		return new ArrayList<String>();
+		return keywords;
 	}
 
 	public static ArrayList<String> getSentences(String paragraph) {
