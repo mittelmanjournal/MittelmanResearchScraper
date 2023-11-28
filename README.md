@@ -10,3 +10,7 @@ The goal of this app is to expedite the research process, especially building of
 - [Features](#features)
 
 ## Installation
+1. Either install the latest version executable file in /App
+2. attempt to run this file (if it doesn't work try installing Java 11 and remove conflicting versions)
+3. have an internet connection
+4. 
