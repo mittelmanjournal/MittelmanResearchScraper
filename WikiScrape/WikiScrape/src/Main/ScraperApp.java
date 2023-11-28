@@ -33,7 +33,7 @@ public class ScraperApp {
 	private static final long serialVersionUID = 1L;
 	private JFrame frame;
 	private JPanel formPanel;
-	private JTextField linkInput, keywordInput, outputPathInput;
+	private JTextField linkInput, keywordInput, outputPathInput, yearRangeInput;
 	private JComboBox<String> extractionType;
 	private JCheckBox getDatesToggle;
 	
@@ -49,6 +49,7 @@ public class ScraperApp {
 	String keywords;
 	String extractionTypeSelected;
 	String outputPath;
+	String yearRange;
 	boolean getDates;
 	
 	private ArrayList<String> stringsToBeSortedByDate;
@@ -117,7 +118,10 @@ public class ScraperApp {
 
 		gbc.gridy++;
 		formPanel.add(new JLabel("Output Folder Path (ends with '\\'):"), gbc);
-
+		
+		gbc.gridy++;
+		formPanel.add(new JLabel("Year Range (YYYY-YYYY):"), gbc);
+		
 		// Text Inputs
 		gbc.gridx = 1;
 		gbc.gridy = 0;
@@ -142,7 +146,10 @@ public class ScraperApp {
 		outputPathInput.setPreferredSize(new Dimension(300, 25));
 		formPanel.add(outputPathInput, gbc);
 
-		//add date range input here
+		gbc.gridy++;
+		yearRangeInput = new JTextField(20);
+		yearRangeInput.setPreferredSize(new Dimension(300, 25));
+		formPanel.add(yearRangeInput, gbc);
 		
 		// Toggle for Dates
 		gbc.gridx = 0;
@@ -189,6 +196,7 @@ public class ScraperApp {
 		keywords = keywordInput.getText();
 		extractionTypeSelected = (String) extractionType.getSelectedItem();
 		outputPath = outputPathInput.getText();
+		yearRange = yearRangeInput.getText();
 		getDates = getDatesToggle.isSelected();
 
 		includeCompiledSortedTimeline = includeCompiledSortedTimelineToggle.isSelected();
@@ -206,7 +214,7 @@ public class ScraperApp {
 
 		scrapeAndWriteEachLinkToFile(getLinksFromFile(links), outputPath, getKeywordsFromFile(keywords),
 				extractionTypeSelected, getDates, includeCompiledSortedTimeline, stringsToBeSortedByDate,
-				compiledSortedTimelineWriter, strictTimeline);
+				compiledSortedTimelineWriter, strictTimeline, yearRange);
 
 	}
 
@@ -216,7 +224,7 @@ public class ScraperApp {
 	public static void scrapeAndWriteEachLinkToFile(ArrayList<String> linksToScrape, String outputPath,
 			ArrayList<String> keywords, String extractionTypeSelected, boolean getDates,
 			boolean includeCompiledSortedTimeline, ArrayList<String> stringsToBeSortedByDate,
-			FileWriter compiledSortedTimelineWriter, boolean strictTimeline) {
+			FileWriter compiledSortedTimelineWriter, boolean strictTimeline, String yearRange) {
 		// for every link, create a document that has each sentence (or other type) that
 		// contains any of the keywords in the document
 		for (int i = 0; i < linksToScrape.size(); i++) {
@@ -228,6 +236,8 @@ public class ScraperApp {
 			} catch (IOException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
+				// in order to keep iterating if the document at this link is null, continue; loop here
+				continue;
 			}
 			Element heading = document.selectFirst("h1");
 
@@ -291,23 +301,65 @@ public class ScraperApp {
 		//need to check getDates truthness too because if not true, and includeCST is true, we could be adding to a null arraylist and writing to a null filewriter.
 		if (includeCompiledSortedTimeline && getDates) {
 			try {
+				ArrayList<String> arr = new ArrayList<String>();
 				//here if strict timeline selected then
 				if(strictTimeline) {
-					for (String s : extraStrictSort(sortByYear(stringsToBeSortedByDate))) {
-						compiledSortedTimelineWriter.write(s + "\n\n");
-					}
+					arr = extraStrictSort(sortByYear(stringsToBeSortedByDate));
+//					for (String s : extraStrictSort(sortByYear(stringsToBeSortedByDate))) {
+//						compiledSortedTimelineWriter.write(s + "\n\n");
+//					}
 				} else {
-					for (String s : sortYearsAndMonths(stringsToBeSortedByDate)) {
-						compiledSortedTimelineWriter.write(s + "\n\n");
-					}
+					arr = sortYearsAndMonths(stringsToBeSortedByDate);
+//					for (String s : sortYearsAndMonths(stringsToBeSortedByDate)) {
+//						compiledSortedTimelineWriter.write(s + "\n\n");
+//					}
 				}
-
+				// handle range stuff on arr
+				for (String s : limitTimelineRange(arr, yearRange)) {
+					compiledSortedTimelineWriter.write(s + "\n\n");
+				}
 				compiledSortedTimelineWriter.close();
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 		}
 	}
+	
+	public static ArrayList<String> limitTimelineRange(ArrayList<String> strict, String range){
+    	ArrayList<String> ret = new ArrayList<String>();
+    	String[] bounds = range.split("-");
+    	int lower = ifBCNegate(bounds[0].trim()); 
+    	int upper = ifBCNegate(bounds[1].trim());
+    	for(String s : strict) {
+    		if(ifBCNegate(s) >= lower && ifBCNegate(s) <= upper) {
+    			ret.add(s);
+    		}
+    	}
+    	return ret;
+    }
+    
+    public static int ifBCNegate(String str) {
+		String[] words = str.trim().split(" ");
+		
+		int j = 0;
+		while(j < words.length) {    			
+			if(containsYear(words[j])) {
+				break;
+			}
+			j++;
+		}
+		int idxOfYear = j; // save year array index
+		int curWord = idxOfYear + 1;
+		int wordsToRight = 1;
+		while (curWord < words.length && wordsToRight <= 2) {	
+			if (anyStringEqualsIgnoreCase(words[curWord], new String[] { "BCE", "BC", "B.C.", "B.C", "BC.", "BC,", "BC)" }) && wordsToRight <= 2) {
+				return -1*extractYear(str);
+			} 
+			wordsToRight++;
+			curWord++;
+		}
+		return extractYear(str);
+    }
 	
 	/**
 	 * Locate a file at filepath and line by line add each string to an array list and return that array list
