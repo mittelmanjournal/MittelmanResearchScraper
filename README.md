@@ -7,10 +7,13 @@ The goal of this app is to expedite the research process, especially building of
 ## Table of Contents
 
 - [Installation](#installation)
-- [Features](#features)
+- [Uses](#uses)
 
 ## Installation
 1. Either install the latest version executable file in /App
 2. attempt to run this file (if it doesn't work try installing Java 11 and remove conflicting versions)
 3. have an internet connection
-4. 
+4. Use the app, check uses below
+
+## Uses
+![Local Image](images/my_image.png)
