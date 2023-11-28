@@ -16,4 +16,4 @@ The goal of this app is to expedite the research process, especially building of
 4. Use the app, check uses below
 
 ## Uses
-![Local Image](images/my_image.png)
+![Local Image](images/comma_separated_input.png)
