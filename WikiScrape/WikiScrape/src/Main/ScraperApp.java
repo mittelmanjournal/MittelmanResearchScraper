@@ -62,7 +62,7 @@ public class ScraperApp {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					ScraperAppTesting window = new ScraperAppTesting();
+					ScraperApp window = new ScraperApp();
 					window.frame.pack();
 					window.frame.setLocationRelativeTo(null);
 					window.frame.setVisible(true);
@@ -76,7 +76,7 @@ public class ScraperApp {
 	/**
 	 * Create the application.
 	 */
-	public ScraperAppTesting() {
+	public ScraperApp() {
 		initialize();
 	}
 
@@ -489,7 +489,7 @@ public class ScraperApp {
 
 	public static ArrayList<String> sortYearsAndMonths(ArrayList<String> stringsToBeSortedByDate) {
 		// Create a custom comparator for sorting
-        Comparator<String> yearComparator = Comparator.comparingInt(ScraperAppTesting::extractYear)
+        Comparator<String> yearComparator = Comparator.comparingInt(ScraperApp::extractYear)
                 .thenComparing(Comparator.naturalOrder());
 
         // Sort the list using the custom comparator
