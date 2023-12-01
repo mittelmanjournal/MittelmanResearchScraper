@@ -1,0 +1,6 @@
+The executable file is a little over 41mb because of all of the maven dependencies for the new features, and github can only accept 25mb uploads or less.
+This: https://drive.google.com/file/d/16r8OL0cjAW426kR-xA8bEnYujNc8gIRK/view?usp=sharing is a google drive link to download the app which now outputs word documents and creates a hyperlink for each scraped datapoint so that you can expand the context if what was collected isn't enough. The hyperlink takes you to the exact section of the wikipage in which the datapoint was found.
+
+link to exe download (if you don't trust downloading executables online you can download the maven wiki scrape file and export it to jar it is the same thing):
+
+https://drive.google.com/file/d/16r8OL0cjAW426kR-xA8bEnYujNc8gIRK/view?usp=sharing
