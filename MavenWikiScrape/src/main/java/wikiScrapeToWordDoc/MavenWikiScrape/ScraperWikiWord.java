@@ -1,5 +1,7 @@
 package wikiScrapeToWordDoc.MavenWikiScrape;
 
+package ResearchExpeditor.main;
+
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -18,12 +20,14 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
@@ -65,29 +69,29 @@ public class ScraperWikiWord {
 	private JTextField linkInput, keywordInput, outputPathInput, yearRangeInput;
 	private JComboBox<String> extractionType;
 	private JCheckBox getDatesToggle;
-	
+
 	private JCheckBox includeCompiledSortedTimelineToggle;
-	
+
 	private JCheckBox strictTimelineToggle;
 	boolean strictTimeline;
-	
+
 	private JButton startButton;
 	private JScrollPane scrollPane;
-	
+
 	String links;
 	String keywords;
 	String extractionTypeSelected;
 	String outputPath;
 	String yearRange;
 	boolean getDates;
-	
+
 	private ArrayList<String> stringsToBeSortedByDate = new ArrayList<String>();
 	boolean includeCompiledSortedTimeline;
-	
+
 	public ScraperWikiWord() {
 		initialize();
 	}
-	
+
 	public static void main(String[] args) throws Exception {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -117,17 +121,17 @@ public class ScraperWikiWord {
 		ImageIcon icon = new ImageIcon("logo.png");
 		frame.setIconImage(icon.getImage());
 		frame.setPreferredSize(new Dimension(800, 300));
-		
+
 		formPanel = new JPanel(new GridBagLayout());
 		formPanel.setBackground(Color.WHITE); // Set background color for the form panel
-		
+
 		GridBagConstraints gbc = new GridBagConstraints();
 		gbc.insets = new Insets(5, 5, 5, 5);
 
 		// Labels
 		gbc.gridx = 0;
 		gbc.gridy = 0;
-		
+
 		formPanel.add(new JLabel("List of Links (line separated, .txt file):"), gbc);
 
 		gbc.gridy++;
@@ -138,10 +142,10 @@ public class ScraperWikiWord {
 
 		gbc.gridy++;
 		formPanel.add(new JLabel("Output Folder Path (ends with '\\'):"), gbc);
-		
+
 		gbc.gridy++;
 		formPanel.add(new JLabel("Year Range (YYYY-YYYY):"), gbc);
-		
+
 		// Text Inputs
 		gbc.gridx = 1;
 		gbc.gridy = 0;
@@ -156,7 +160,7 @@ public class ScraperWikiWord {
 		formPanel.add(keywordInput, gbc);
 
 		gbc.gridy++;
-		String[] extractionTypes = { "Sentence", "Paragraph"};
+		String[] extractionTypes = { "Sentence", "Paragraph" };
 		extractionType = new JComboBox<>(extractionTypes);
 		extractionType.setPreferredSize(new Dimension(300, 25));
 		formPanel.add(extractionType, gbc);
@@ -170,7 +174,7 @@ public class ScraperWikiWord {
 		yearRangeInput = new JTextField(20);
 		yearRangeInput.setPreferredSize(new Dimension(300, 25));
 		formPanel.add(yearRangeInput, gbc);
-		
+
 		// Toggle for Dates
 		gbc.gridx = 0;
 		gbc.gridy++;
@@ -178,16 +182,15 @@ public class ScraperWikiWord {
 		getDatesToggle = new JCheckBox("Get Dates");
 		formPanel.add(getDatesToggle, gbc);
 
-		
 		gbc.gridx = 1;
 		includeCompiledSortedTimelineToggle = new JCheckBox("Sorted Timeline");
 		formPanel.add(includeCompiledSortedTimelineToggle, gbc);
-		
-		//restrict timeline toggle here
+
+		// restrict timeline toggle here
 		gbc.gridx = 3;
 		strictTimelineToggle = new JCheckBox("Restrict Timeline");
 		formPanel.add(strictTimelineToggle, gbc);
-		
+
 		// Button
 		gbc.gridy++;
 		gbc.gridx = 0;
@@ -204,9 +207,8 @@ public class ScraperWikiWord {
 		scrollPane = new JScrollPane(formPanel);
 		frame.add(scrollPane, BorderLayout.CENTER);
 
-		
 	}
-	
+
 	private void startScraping() {
 		// Implement scraping logic here based on the input values
 		links = linkInput.getText();
@@ -217,20 +219,112 @@ public class ScraperWikiWord {
 		getDates = getDatesToggle.isSelected();
 
 		includeCompiledSortedTimeline = includeCompiledSortedTimelineToggle.isSelected();
-		
+
 		strictTimeline = strictTimelineToggle.isSelected();
 
-		scrapeAndWriteEachLinkToFile(getLinksFromFile(links), outputPath, getKeywordsFromFile(keywords),
-				extractionTypeSelected, getDates, includeCompiledSortedTimeline, stringsToBeSortedByDate,
-				strictTimeline, yearRange);
+		scrapeAndWriteEachLinkToFile(getLinksFromFile(links), outputPath, getKeywordsFromFile(keywords), extractionTypeSelected, getDates,
+				includeCompiledSortedTimeline, stringsToBeSortedByDate, strictTimeline, yearRange);
 
+	}
+	
+	public static ArrayList<String> checkLinks(ArrayList<String> links) {
+		//goes through each link, when invalid link is found, get a 20 item list of alternative options and in a popup allow the user to select any amount of them (of nothing selected and proceed button pressed, nothing will replace that invalid item and it will just be removed) to replace that one item, return a list of all of the replaced links and all of the links that were valid and didn't require replacement
+		ArrayList<String> addIfValid = new ArrayList<String>();
+		for(int i = 0; i < links.size(); i++) {
+			if(isLinkValid(links.get(i))) {
+				addIfValid.add(links.get(i));
+			} else {
+				//if no search items were found, just don't add this element to array and move on
+				//if search items are found, open popup with the top 5-10 items allowing user to select any variable amount of them then press a button that gets the ones he pressed and adds those items to the addIfValid arrayList
+				ArrayList<String> replacementValidLinks = selectValidLinksFromPopup(links.get(i));
+				addIfValid.addAll(replacementValidLinks);
+			}
+		}
+		
+		return addIfValid;
+		
+	}
+	
+	public static ArrayList<String> selectValidLinksFromPopup(String invalidLink){
+		//popup on screen that says this topic you inputted was invalid but we found x similar searches, 
+		//if no similar searches found, instead of the previous text include your inputted topic 
+		//x was invalid and there are no similar topics, still do pop up but only have proceed button. 
+		//User selects all of the desired values (allowed to select none) and then presses proceed button. 
+		//after pressing proceed button return an array list with all of the selected links (can be empty)
+		
+		Document document = null;
+		try {
+			document = Jsoup.connect("https://en.wikipedia.org/w/index.php?search=" + invalidLink + "&ns0=1").get();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		if (document.selectFirst("div.searchdidyoumean") != null) { //if it is null it means no similar searches
+			String correctedTopic = document.selectFirst("div.searchdidyoumean").text().replace("Did you mean: ", "").replace("Showing results for ", "").replace(". No results found for "+invalidLink+".", "");
+			try {
+				document = Jsoup.connect("https://en.wikipedia.org/w/index.php?search=" + correctedTopic + "&title=Special:Search&profile=advanced&fulltext=1&ns0=1").get();
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} //sometimes after getting the correctedTopic you connect to a article instead of the search, must add &title=Special:Search&profile=advanced&fulltext=1&ns0=1 to not allow it to happen
+		}
+		
+		
+		ArrayList<String> validTopicsToChooseFrom = new ArrayList<String>(); 
+		//this if statement above may cause problems when there are no results
+		//if problems are caused then add an else chain to != null check that handles it
+		for(Element e : document.select("div.mw-body-content > div.searchresults.mw-searchresults-has-iw > div.mw-search-results-container > ul.mw-search-results > li.mw-search-result.mw-search-result-ns-0")){
+			Element r = e.select("table.searchResultImage > tbody > tr > td.searchResultImage-text > div.mw-search-result-heading > a").get(0); 
+			validTopicsToChooseFrom.add(r.attr("title"));
+		}
+		
+		//with a list valid topics to choose from now add them all to a popup and enable them all to be clickable while the popup is still up and once the proceed button is clicked, get all of the selected ones
+		//and return them as an array list 
+		JCheckBox[] checkBoxes = new JCheckBox[validTopicsToChooseFrom.size()];
+        for (int i = 0; i < validTopicsToChooseFrom.size(); i++) {
+            checkBoxes[i] = new JCheckBox(validTopicsToChooseFrom.get(i));
+        }
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.add(new JLabel("Invalid link found: " + invalidLink));
+        for (JCheckBox checkBox : checkBoxes) {
+            panel.add(checkBox);
+        }
+
+        int option = JOptionPane.showConfirmDialog(null, panel, "Select Valid Links", JOptionPane.OK_CANCEL_OPTION);
+
+        if (option == JOptionPane.OK_OPTION) {
+            ArrayList<String> selectedLinks = new ArrayList<>();
+            for (JCheckBox checkBox : checkBoxes) {
+                if (checkBox.isSelected()) {
+                    selectedLinks.add(checkBox.getText());
+                }
+            }
+            return selectedLinks;
+        } else {
+            return new ArrayList<>();
+        }
+	}
+	
+	public static boolean isLinkValid(String link) {
+		String url = "https://en.wikipedia.org/wiki/" + link;
+		Document document = null;
+		try {
+			document = Jsoup.connect(url).get();
+		} catch (IOException e1) {
+			return false;
+		}
+		return true;
 	}
 	
 	public static void scrapeAndWriteEachLinkToFile(ArrayList<String> linksToScrape, String outputPath,
 			ArrayList<String> keywords, String extractionTypeSelected, boolean getDates,
 			boolean includeCompiledSortedTimeline, ArrayList<String> stringsToBeSortedByDate, boolean strictTimeline,
 			String yearRange) {
-
+		
+		linksToScrape = checkLinks(linksToScrape);
+		
 		HashMap<String, HashSet<String>> linksToStrings = new HashMap<String, HashSet<String>>();
 		for (int i = 0; i < linksToScrape.size(); i++) {
 			String writeText = "";
@@ -239,13 +333,6 @@ public class ScraperWikiWord {
 			try {
 				document = Jsoup.connect(url).get();
 			} catch (IOException e1) {
-				System.out.println("COULDNT CONNECT TO DOCUMENT, DO SOMETHING HERE TO TRY TO QUERY WIKI FOR TOPIC");
-				//1. take the linkstoscrape i
-				//2. put it into wiki querier
-				//3. select first appearing article
-				//4. somehow denote that string was corrected/or not do whatever bro
-				//5. if nothing comes up then just do not make this one be scraped
-				e1.printStackTrace();
 				continue;
 			}
 
@@ -255,11 +342,12 @@ public class ScraperWikiWord {
 				Element contentTags = contentText.selectFirst("div.mw-content-ltr.mw-parser-output");
 				// Elements paragraphs = e2.select("p");
 				Element currentTag = contentTags.selectFirst("p");
-				
+
 				String currentHeading = "";
-				
+
 				while (currentTag != null) {
-					if(currentTag.tagName().equals("h2") || currentTag.tagName().equals("h3") || currentTag.tagName().equals("h4")) {
+					if (currentTag.tagName().equals("h2") || currentTag.tagName().equals("h3")
+							|| currentTag.tagName().equals("h4")) {
 						currentHeading = currentTag.text();
 					}
 					String link = url + "#" + currentHeading.trim().replaceAll(" ", "_").replaceAll("\"", "%22");
@@ -268,10 +356,10 @@ public class ScraperWikiWord {
 						if (extractionTypeSelected.equals("Sentence")) {
 							for (String sentence : getSentences(currentTag.text())) {
 								if (!writeText.contains(sentence)) {
-									
+
 									if (includeCompiledSortedTimeline) {
 										stringsToBeSortedByDate.add(sentence);
-										
+
 										if (!linksToStrings.containsKey(link)) {
 											linksToStrings.put(link, new HashSet<String>());
 										}
@@ -299,7 +387,7 @@ public class ScraperWikiWord {
 						}
 
 					}
-					
+
 					if (currentTag.tagName().equals("p")) {
 						for (String keyword : keywords) {
 							if (keyword != null && !keyword.equals("") && currentTag.text().contains(keyword)) {
@@ -332,7 +420,7 @@ public class ScraperWikiWord {
 				e.printStackTrace();
 			}
 		}
-		
+
 		if (includeCompiledSortedTimeline && getDates) {
 			try {
 				ArrayList<String> arr = new ArrayList<String>();
@@ -346,28 +434,28 @@ public class ScraperWikiWord {
 				// handle range stuff on arr
 				if (!yearRange.trim().equals("") && yearRange != null && containsYear(yearRange)) {
 					arr = limitTimelineRange(arr, yearRange);
-					
+
 				}
-				
+
 				XWPFDocument timelineWordDoc = new XWPFDocument();
-				
-				//System.out.println(linksToStrings);
+
+				// System.out.println(linksToStrings);
 				ArrayList<String> ifStringContainedHereDontAdd = new ArrayList<String>();
 				for (String s : arr) {
-					//System.out.println("Sentence with year: "+s);
-					for(String key : linksToStrings.keySet()) {
-						//System.out.println(key);
-						//System.out.println(linksToStrings.get(key));
-						if(linksToStrings.get(key).contains(s) && !ifStringContainedHereDontAdd.contains(s)) {
-							//System.out.println(true);
+					// System.out.println("Sentence with year: "+s);
+					for (String key : linksToStrings.keySet()) {
+						// System.out.println(key);
+						// System.out.println(linksToStrings.get(key));
+						if (linksToStrings.get(key).contains(s) && !ifStringContainedHereDontAdd.contains(s)) {
+							// System.out.println(true);
 							XWPFParagraph para = timelineWordDoc.createParagraph();
 							addClickableHyperlink(para, s, key);
 							ifStringContainedHereDontAdd.add(s);
 							break;
 						}
-						//System.out.println(false);
+						// System.out.println(false);
 					}
-					
+
 				}
 				FileOutputStream outTimeline = new FileOutputStream(outputPath + "Timeline.docx");
 				timelineWordDoc.write(outTimeline);
@@ -392,8 +480,9 @@ public class ScraperWikiWord {
 //}
 
 	static XWPFHyperlinkRun createHyperlinkRun(XWPFParagraph paragraph, String uri) throws Exception {
-		//String encodedUri = URLEncoder.encode(uri, "UTF-8");
-		//must do your own encoding when seeing spaces convert to _ when " conv to %22 etc...
+		// String encodedUri = URLEncoder.encode(uri, "UTF-8");
+		// must do your own encoding when seeing spaces convert to _ when " conv to %22
+		// etc...
 		String rId = paragraph.getPart().getPackagePart()
 				.addExternalRelationship(uri, XWPFRelation.HYPERLINK.getRelation()).getId();
 
@@ -500,16 +589,17 @@ public class ScraperWikiWord {
 	/**
 	 * Get each keyword string as an item in an array list by splitting a text
 	 * file's string by commas
-	 */	public static ArrayList<String> getKeywordsFromFile(String keywordsFilePath) {
+	 */
+	public static ArrayList<String> getKeywordsFromFile(String keywordsFilePath) {
 
 		ArrayList<String> keywords = new ArrayList<String>();
 
 		Path path = Paths.get(keywordsFilePath);
-		System.out.println("kwfp"+keywordsFilePath);
+		System.out.println("kwfp" + keywordsFilePath);
 		System.out.println(path);
 		if (Files.exists(path) && !keywordsFilePath.equals("")) {
 			System.out.println("File exists at path: " + path.toAbsolutePath());
-			
+
 			try (BufferedReader reader = Files.newBufferedReader(path)) {
 				StringBuilder content = new StringBuilder();
 				String line;
